@@ -19,41 +19,65 @@ client.on('ready', () => {
   console.log('Successfuly connected to discord servers!');
 });
 
-const channelNewArrivals = '557056028991291394';
-const channelBotSpam = '557048243696042055';
-const channelUmiSupport = '392489134721335306';
+// Channel IDs
+const idChannelNewArrivals = '557056028991291394';
+const idChannelBotSpam = '557048243696042055';
+const idChannelUmiSupport = '392489134721335306';
+const idChannelHiguSupport = '392489108875771906';
+
+// Role IDs
+const idRoleSpoilerViewer = '558567398542802944';
+
+const usersWhoHaveSentAttachments = new Map();
 
 // Create an event listener for messages
 client.on('message', (message) => {
-  // verify messages on the correct channel are filtered
-  // To get the channel ID, follow instructions here: https://support.discordapp.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-
-  if (!(message.channel.id === channelBotSpam || message.channel.id === channelUmiSupport)) {
-    return;
-  }
-
-  console.log(`Got ${message.content} with attachment ${message.attachments} embeds ${message.embeds}`);
-  console.log(message.attachments);
-  console.log(message);
-
-  // TODO: this will send one message for each attachment!
-  // should probably only send one message per user's message.
-  message.attachments.array().forEach((attachment) => {
-    console.log(attachment);
-    message.channel.send(`Hi ${message.author.username}, it looks like you have sent an attachment: <${attachment.url}>. If it contains spoilers, please re-upload the image with spoiler tags.`, { reply: message.member });
-  });
-
+  console.log(`User [${message.author.username}|${message.author.id}] sent [${message.content}]`);
 
   // If the message is "ping"
   if (message.content === 'ping') {
     // Send "pong" to the same channel
     console.log('sent pong');
     message.channel.send('pong');
+  } else if (message.content.trim() === '!show_me_spoilers!') {
+    console.log(`Trying to give spoiler role to ${message.member.user.username}`);
+
+    if (message.member.roles.has(idRoleSpoilerViewer)) {
+      console.log('User already has role! ignoring request :S');
+    } else {
+      const roleObject = message.guild.roles.get(idRoleSpoilerViewer);
+      message.member.addRole(roleObject);
+      client.channels.get(idChannelNewArrivals).send('Congratulations, you now have the spoiler role!', { reply: message.member });
+    }
   }
+
+  // verify messages on the correct channel are filtered
+  // To get the channel ID, follow instructions here: https://support.discordapp.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-
+  if (!(message.channel.id === idChannelBotSpam
+        || message.channel.id === idChannelUmiSupport
+        || message.channel.id === idChannelHiguSupport)) {
+    return;
+  }
+
+  // TODO: this will send one message for each attachment!
+  // should probably only send one message per user's message.
+  message.attachments.array().forEach((attachment) => {
+    if (!usersWhoHaveSentAttachments.has(message.author.id)) {
+      usersWhoHaveSentAttachments.set(message.author.id);
+      console.log(attachment);
+      message.channel.send(`Hi ${message.author.username}, it looks like you have sent an attachment: <${attachment.url}>. 
+If it contains spoilers, please re-upload the image with the '✅ Mark as Spoiler' checkbox ticked.
+You won't be warned again until the bot is restarted.`, { reply: message.member });
+    }
+  });
 });
 
 client.on('guildMemberAdd', (member) => {
-  const guildMemberAddMessage = `Greetings ${member.user.username}! Please do NOT post spoilers. If you must post spoilers, please use spoiler tags like \`|| A banana naturally splits into three equal pieces ||\``;
-  client.channels.get(channelNewArrivals).send(guildMemberAddMessage, { reply: member });
+  const guildMemberAddMessage = `Greetings!
+  1. By default, you are restricted from viewing the spoiler channels. To gain access, please type \`!show_me_spoilers!\` exactly as shown.
+  2. Please do not post spoilers in the non-spoiler channels.
+  3. In the support channels, <#${idChannelHiguSupport}}> and <#${idChannelUmiSupport}}>, please use spoiler tags like \`|| A banana splits into three equal pieces ||\` to hide spoilers`;
+  client.channels.get(idChannelNewArrivals).send(guildMemberAddMessage, { reply: member });
 });
 
 // Log our bot in using the token from https://discordapp.com/developers/applications/me
