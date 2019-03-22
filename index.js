@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * A ping pong bot, whenever you send "ping", it replies "pong".
+ * 07th-mod discord bot
  */
 
 // Import the discord.js module
@@ -30,25 +30,44 @@ const idRoleSpoilerViewer = '558567398542802944';
 
 const usersWhoHaveSentAttachments = new Map();
 
+// Prints a welcome message, and @tags the given member to encourage them to look at the message
+function printWelcomeMessage(member) {
+  const guildMemberAddMessage = `Greetings!
+  1. By default, you are restricted from viewing the spoiler channels. To gain access, please type \`!show_me_spoilers\` exactly as shown.
+  2. Please do not post spoilers in the non-spoiler channels.
+  3. In the support channels, <#${idChannelHiguSupport}}> and <#${idChannelUmiSupport}}>, please use spoiler tags like \`|| A banana splits into three equal pieces ||\` to hide spoilers`;
+  client.channels.get(idChannelNewArrivals).send(guildMemberAddMessage, { reply: member });
+}
+
+// Gives the 'spoiler viewer' role to the sender of the given message
+function giveMessageSenderSpoilerRole(message) {
+  console.log(`Trying to give spoiler role to ${message.member.user.username}`);
+
+  if (message.member.roles.has(idRoleSpoilerViewer)) {
+    console.log('User already has role! ignoring request :S');
+  } else {
+    const roleObject = message.guild.roles.get(idRoleSpoilerViewer);
+    message.member.addRole(roleObject);
+    client.channels.get(idChannelNewArrivals).send('Congratulations, you now have the spoiler role!', { reply: message.member });
+  }
+}
+
+// All functions here must take member as argument
+const commands = {
+  ping: message => message.channel.send('pong'),
+  '!show_me_spoilers': giveMessageSenderSpoilerRole,
+  '!simulate_user_join': message => printWelcomeMessage(message.member),
+  '!help': message => message.channel.send(Object.keys(commands).toString()),
+};
+
 // Create an event listener for messages
 client.on('message', (message) => {
   console.log(`User [${message.author.username}|${message.author.id}] sent [${message.content}]`);
 
-  // If the message is "ping"
-  if (message.content === 'ping') {
-    // Send "pong" to the same channel
-    console.log('sent pong');
-    message.channel.send('pong');
-  } else if (message.content.trim() === '!show_me_spoilers!') {
-    console.log(`Trying to give spoiler role to ${message.member.user.username}`);
-
-    if (message.member.roles.has(idRoleSpoilerViewer)) {
-      console.log('User already has role! ignoring request :S');
-    } else {
-      const roleObject = message.guild.roles.get(idRoleSpoilerViewer);
-      message.member.addRole(roleObject);
-      client.channels.get(idChannelNewArrivals).send('Congratulations, you now have the spoiler role!', { reply: message.member });
-    }
+  // If the message's content matches a value in the lookup table, then execute it
+  const maybeFunction = commands[message.content];
+  if (maybeFunction !== undefined) {
+    maybeFunction(message);
   }
 
   // verify messages on the correct channel are filtered
@@ -72,13 +91,7 @@ You won't be warned again until the bot is restarted.`, { reply: message.member 
   });
 });
 
-client.on('guildMemberAdd', (member) => {
-  const guildMemberAddMessage = `Greetings!
-  1. By default, you are restricted from viewing the spoiler channels. To gain access, please type \`!show_me_spoilers!\` exactly as shown.
-  2. Please do not post spoilers in the non-spoiler channels.
-  3. In the support channels, <#${idChannelHiguSupport}}> and <#${idChannelUmiSupport}}>, please use spoiler tags like \`|| A banana splits into three equal pieces ||\` to hide spoilers`;
-  client.channels.get(idChannelNewArrivals).send(guildMemberAddMessage, { reply: member });
-});
+client.on('guildMemberAdd', printWelcomeMessage);
 
 // Log our bot in using the token from https://discordapp.com/developers/applications/me
 const tokenFileName = './token.token';
