@@ -33,9 +33,9 @@ const usersWhoHaveSentAttachments = new Map();
 // Prints a welcome message, and @tags the given member to encourage them to look at the message
 function printWelcomeMessage(member) {
   const guildMemberAddMessage = `Greetings!
-  1. By default, you are restricted from viewing the spoiler channels. To gain access, please type \`!show_me_spoilers\` exactly as shown.
+  1. By default, you are restricted from viewing the spoiler channels. To gain access, please send \`!show_me_spoilers\` exactly as shown.
   2. Please do not post spoilers in the non-spoiler channels.
-  3. In the support channels, <#${idChannelHiguSupport}}> and <#${idChannelUmiSupport}}>, please use spoiler tags like \`|| A banana splits into three equal pieces ||\` to hide spoilers`;
+  3. In the support channels, <#${idChannelHiguSupport}> and <#${idChannelUmiSupport}>, please use spoiler tags like \`|| A banana splits into three equal pieces ||\` to hide spoilers`;
   client.channels.get(idChannelNewArrivals).send(guildMemberAddMessage, { reply: member });
 }
 
