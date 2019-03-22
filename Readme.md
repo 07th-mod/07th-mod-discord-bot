@@ -15,3 +15,11 @@
 1. ESlint is used for linting
 2. Install the eslint plugin for Visual Studio Code
 3. Open the respository **folder** (not just the source file), and Visual Studio Code should add linting.
+
+## Discord Setup
+
+By default, discord doesn't show you the channel/guild IDs, and extra information useful for developing bots. Check out
+[this guide](https://support.discordapp.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-)
+to enable developer mode.
+
+There are some gotchas with bots' permissions, see [Discord's permission documentation.](https://discordapp.com/developers/docs/topics/permissions#permission-hierarchy)
