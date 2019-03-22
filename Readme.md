@@ -6,8 +6,8 @@
     - node.js (this will install npm)
 2. Clone this git repository
 3. Run `npm install`
-4. Obtain a discord bot token (TODO: add instructions for this)
-5. Save the token in a file called `token.token`, with nothing else in the file
+4. Obtain a discord bot token (TODO: add instructions for this). **Keep this token private!**
+5. Save the token in a file called `token.token`, with nothing else in the file **Do not upload this token to Github! (it's in the .gitignore)**
 6. Run `npm start` to run the bot
 
 ## IDE setup
