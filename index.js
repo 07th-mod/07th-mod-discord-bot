@@ -73,8 +73,8 @@ function removeSpoilerRoles(message) {
   unspoilerRoleIds.forEach((roleId) => {
     // eslint-disable-next-line no-unused-vars
     message.member.removeRole(message.guild.roles.get(roleId)).catch((_ex) => {});
-    replyToMessageNoFail(message, 'All your spoiler roles have been removed!');
   });
+  replyToMessageNoFail(message, 'All your spoiler roles have been removed!');
 }
 
 // All functions here must take member as argument
