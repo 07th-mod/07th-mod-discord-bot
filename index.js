@@ -27,6 +27,7 @@ const idChannelRules = '512701581494583312';
 const idRoleHigurashiSpoilers = '558567398542802944';
 const idRoleUminekoSpoilers = '559187484165144586';
 const idRoleOtherGameSpoilers = '559187572451180545';
+const idRoleNormalChannels = '559248937714712586';
 
 // List of spoiler roles to remove with the !unspoil command
 const unspoilerRoleIds = [idRoleHigurashiSpoilers, idRoleUminekoSpoilers, idRoleOtherGameSpoilers];
@@ -62,7 +63,7 @@ function giveMessageSenderSpoilerRole(message, idOfRoleToGive) {
   if (message.member.roles.has(idOfRoleToGive)) {
     console.log('User already has role! ignoring request :S');
   } else {
-    const roleObject = message.guild.roles.get(idOfRoleToGive);
+    const roleObject = currentGuild.roles.get(idOfRoleToGive);
     message.member.addRole(roleObject);
     replyToMessageNoFail(message, `Congratulations, you now have the ${roleObject.name} role!`);
   }
@@ -93,6 +94,18 @@ client.on('ready', () => {
   console.log('Successfuly connected to discord servers!');
   currentGuild = client.guilds.get(guildID);
 });
+
+// See https://github.com/AnIdiotsGuide/discordjs-bot-guide/blob/master/coding-guides/raw-events.md
+// Add the 'normal' role when a user leaves a reaction in the #rules channel
+client.on('raw', (packet) => {
+  if (packet.t === 'MESSAGE_REACTION_ADD' && packet.d.channel_id === idChannelRules) {
+    const userWhoReacted = client.users.get(packet.d.user_id);
+    currentGuild.fetchMember(userWhoReacted).then((memberWhoReacted) => {
+      memberWhoReacted.addRole(currentGuild.roles.get(idRoleNormalChannels));
+    }).catch(console.log);
+  }
+});
+
 // Create an event listener for messages
 client.on('message', (message) => {
   console.log(`User [${message.author.username}|${message.author.id}] sent [${message.content}]`);
