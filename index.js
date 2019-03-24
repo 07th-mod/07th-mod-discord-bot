@@ -26,9 +26,26 @@ const idChannelUmiSupport = '392489134721335306';
 const idChannelHiguSupport = '392489108875771906';
 const idChannelRules = '512701581494583312';
 // Role IDs
-const idRoleSpoilerViewer = '558567398542802944';
+const idRoleHigurashiSpoilers = '558567398542802944';
+const idRoleUminekoSpoilers = '559187484165144586';
+const idRoleOtherGameSpoilers = '559187572451180545';
+
+// List of spoiler roles to remove with the !unspoil command
+const unspoilerRoleIds = [idRoleHigurashiSpoilers, idRoleUminekoSpoilers, idRoleOtherGameSpoilers];
 
 const usersWhoHaveSentAttachments = new Map();
+
+// Tries to reply to the user, and tag the user in the message. If the bot cannot
+// talk on that channel, uses the 'new arrivals' channel. If the bot still cannot
+// talk, gives up and logs an error
+/* eslint-disable no-unused-vars */
+function replyToMessageNoFail(message, replyText) {
+  message.channel.send(replyText, { reply: message.member }).catch((__exception) => {
+    client.channels.get(idChannelNewArrivals).send(replyText, { reply: message.member })
+      .catch(___exception => console.log('replyToMessageNoFail(): failed to send reply'));
+  });
+}
+/* eslint-enable no-unused-vars */
 
 // Prints a welcome message, and @tags the given member to encourage them to look at the message
 function printWelcomeMessage(member) {
@@ -41,24 +58,35 @@ function printWelcomeMessage(member) {
 }
 
 // Gives the 'spoiler viewer' role to the sender of the given message
-function giveMessageSenderSpoilerRole(message) {
+function giveMessageSenderSpoilerRole(message, idOfRoleToGive) {
   console.log(`Trying to give spoiler role to ${message.member.user.username}`);
 
-  if (message.member.roles.has(idRoleSpoilerViewer)) {
+  if (message.member.roles.has(idOfRoleToGive)) {
     console.log('User already has role! ignoring request :S');
   } else {
-    const roleObject = message.guild.roles.get(idRoleSpoilerViewer);
+    const roleObject = message.guild.roles.get(idOfRoleToGive);
     message.member.addRole(roleObject);
-    client.channels.get(idChannelNewArrivals).send('Congratulations, you now have the spoiler role!', { reply: message.member });
+    replyToMessageNoFail(message, `Congratulations, you now have the ${roleObject.name} role!`);
   }
+}
+
+function removeSpoilerRoles(message) {
+  unspoilerRoleIds.forEach((roleId) => {
+    // eslint-disable-next-line no-unused-vars
+    message.member.removeRole(message.guild.roles.get(roleId)).catch((_ex) => {});
+    replyToMessageNoFail(message, 'All your spoiler roles have been removed!');
+  });
 }
 
 // All functions here must take member as argument
 const commands = {
-  ping: message => message.channel.send('pong'),
-  '!show_me_spoilers': giveMessageSenderSpoilerRole,
+  '!spoil_higurashi': message => giveMessageSenderSpoilerRole(message, idRoleHigurashiSpoilers),
+  '!spoil_umineko': message => giveMessageSenderSpoilerRole(message, idRoleUminekoSpoilers),
+  '!spoil_other': message => giveMessageSenderSpoilerRole(message, idRoleOtherGameSpoilers),
+  '!unspoil': removeSpoilerRoles,
   '!simulate_user_join': message => printWelcomeMessage(message.member),
-  '!help': message => message.channel.send(Object.keys(commands).toString()),
+  '!help': message => replyToMessageNoFail(message, `The following commands are available:\n - ${Object.keys(commands).join('\n - ')}`),
+  '!ping': message => replyToMessageNoFail(message, 'polo'),
 };
 
 // Create an event listener for messages
@@ -85,9 +113,10 @@ client.on('message', (message) => {
     if (!usersWhoHaveSentAttachments.has(message.author.id)) {
       usersWhoHaveSentAttachments.set(message.author.id);
       console.log(attachment);
-      message.channel.send(`Hi ${message.author.username}, it looks like you have sent an attachment: <${attachment.url}>. 
+      const replyText = `Hi ${message.author.username}, it looks like you have sent an attachment: <${attachment.url}>. 
 If it contains spoilers, please re-upload the image with the '✅ Mark as Spoiler' checkbox ticked.
-You won't be warned again until the bot is restarted.`, { reply: message.member });
+You won't be warned again until the bot is restarted.`;
+      replyToMessageNoFail(message, replyText);
     }
   });
 });
