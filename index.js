@@ -34,6 +34,14 @@ const unspoilerRoleIds = [idRoleHigurashiSpoilers, idRoleUminekoSpoilers, idRole
 
 const usersWhoHaveSentAttachments = new Map();
 
+const verboseLoggingEnabled = false;
+
+function logVerbose(message) {
+  if (verboseLoggingEnabled) {
+    console.log(message);
+  }
+}
+
 // Tries to reply to the user, and tag the user in the message. If the bot cannot
 // talk on that channel, uses the 'new arrivals' channel. If the bot still cannot
 // talk, gives up and logs an error
@@ -41,7 +49,7 @@ const usersWhoHaveSentAttachments = new Map();
 function replyToMessageNoFail(message, replyText) {
   message.channel.send(replyText, { reply: message.member }).catch((__exception) => {
     client.channels.get(idChannelNewArrivals).send(replyText, { reply: message.member })
-      .catch(___exception => console.log('replyToMessageNoFail(): failed to send reply'));
+      .catch(___exception => console.error('replyToMessageNoFail(): failed to send reply'));
   });
 }
 /* eslint-enable no-unused-vars */
@@ -58,10 +66,10 @@ function printWelcomeMessage(member) {
 
 // Gives the 'spoiler viewer' role to the sender of the given message
 function giveMessageSenderSpoilerRole(message, idOfRoleToGive) {
-  console.log(`Trying to give spoiler role to ${message.member.user.username}`);
+  logVerbose(`Trying to give spoiler role to ${message.member.user.username}`);
 
   if (message.member.roles.has(idOfRoleToGive)) {
-    console.log('User already has role! ignoring request :S');
+    logVerbose('User already has role! ignoring request :S');
   } else {
     const roleObject = currentGuild.roles.get(idOfRoleToGive);
     message.member.addRole(roleObject);
@@ -91,7 +99,7 @@ const commands = {
 // The ready event is vital, it means that only _after_ this will
 // your bot start reacting to information received from Discord
 client.on('ready', () => {
-  console.log('Successfuly connected to discord servers!');
+  logVerbose('Successfuly connected to discord servers!');
   currentGuild = client.guilds.get(guildID);
 });
 
@@ -102,13 +110,13 @@ client.on('raw', (packet) => {
     const userWhoReacted = client.users.get(packet.d.user_id);
     currentGuild.fetchMember(userWhoReacted).then((memberWhoReacted) => {
       memberWhoReacted.addRole(currentGuild.roles.get(idRoleNormalChannels));
-    }).catch(console.log);
+    }).catch(logVerbose);
   }
 });
 
 // Create an event listener for messages
 client.on('message', (message) => {
-  console.log(`User [${message.author.username}|${message.author.id}] sent [${message.content}]`);
+  logVerbose(`User [${message.author.username}|${message.author.id}] sent [${message.content}]`);
 
   // If the message's content matches a value in the lookup table, then execute it
   const maybeFunction = commands[message.content];
@@ -129,7 +137,7 @@ client.on('message', (message) => {
   message.attachments.array().forEach((attachment) => {
     if (!usersWhoHaveSentAttachments.has(message.author.id)) {
       usersWhoHaveSentAttachments.set(message.author.id);
-      console.log(attachment);
+      logVerbose(attachment);
       const replyText = `Hi ${message.author.username}, it looks like you have sent an attachment: <${attachment.url}>. 
 If it contains spoilers, please re-upload the image with the '✅ Mark as Spoiler' checkbox ticked.
 You won't be warned again until the bot is restarted.`;
@@ -145,7 +153,7 @@ const tokenFileName = './token.token';
 
 fs.readFile(tokenFileName, 'utf-8', (err, content) => {
   if (err) {
-    console.log(`Couldn't open discord bot token ${tokenFileName}, ${err}`);
+    console.error(`Couldn't open discord bot token ${tokenFileName}, ${err}`);
   } else {
     client.login(content.trim());
   }
