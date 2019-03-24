@@ -11,13 +11,11 @@ const fs = require('fs');
 // Create an instance of a Discord client
 const client = new Discord.Client();
 
-/**
- * The ready event is vital, it means that only _after_ this will
- * your bot start reacting to information received from Discord
- */
-client.on('ready', () => {
-  console.log('Successfuly connected to discord servers!');
-});
+// This is assigned once connection is established
+let currentGuild = null;
+
+// 07th mod guild ID
+const guildID = '384426173821616128';
 
 // Channel IDs
 const idChannelNewArrivals = '557056028991291394';
@@ -89,6 +87,12 @@ const commands = {
   '!ping': message => replyToMessageNoFail(message, 'polo'),
 };
 
+// The ready event is vital, it means that only _after_ this will
+// your bot start reacting to information received from Discord
+client.on('ready', () => {
+  console.log('Successfuly connected to discord servers!');
+  currentGuild = client.guilds.get(guildID);
+});
 // Create an event listener for messages
 client.on('message', (message) => {
   console.log(`User [${message.author.username}|${message.author.id}] sent [${message.content}]`);
