@@ -1,0 +1,19 @@
+[Unit]
+Description=Discord Bot
+# Ensure that the network is started up before starting the bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Another Type option: forking
+Type=simple
+User=drojf
+WorkingDirectory=/home/drojf/07th-mod-discord-bot
+ExecStart=/usr/bin/npm start
+# Other Restart options: or always, on-failure, on-abort, etc
+# Restart every 5 seconds on failure
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
