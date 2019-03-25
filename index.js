@@ -18,16 +18,24 @@ let currentGuild = null;
 const guildID = '384426173821616128';
 
 // Channel IDs
-const idChannelNewArrivals = '557056028991291394';
+const idChannelRoleAssignment = '557056028991291394';
 const idChannelBotSpam = '557048243696042055';
 const idChannelUmiSupport = '392489134721335306';
 const idChannelHiguSupport = '392489108875771906';
 const idChannelRules = '512701581494583312';
+
 // Role IDs
 const idRoleHigurashiSpoilers = '558567398542802944';
 const idRoleUminekoSpoilers = '559187484165144586';
 const idRoleOtherGameSpoilers = '559187572451180545';
 const idRoleNormalChannels = '559248937714712586';
+
+// Reaction to Role map
+const emojiToRoleIDMap = {
+  mion: idRoleHigurashiSpoilers,
+  BEATORICHE: idRoleUminekoSpoilers,
+  angelmort: idRoleOtherGameSpoilers,
+};
 
 // List of spoiler roles to remove with the !unspoil command
 const unspoilerRoleIds = [idRoleHigurashiSpoilers, idRoleUminekoSpoilers, idRoleOtherGameSpoilers];
@@ -47,22 +55,10 @@ function logVerbose(message) {
 // talk, gives up and logs an error
 /* eslint-disable no-unused-vars */
 function replyToMessageNoFail(message, replyText) {
-  message.channel.send(replyText, { reply: message.member }).catch((__exception) => {
-    client.channels.get(idChannelNewArrivals).send(replyText, { reply: message.member })
-      .catch(___exception => console.error('replyToMessageNoFail(): failed to send reply'));
-  });
+  message.channel.send(replyText, { reply: message.member })
+    .catch(___exception => console.error('replyToMessageNoFail(): failed to send reply'));
 }
 /* eslint-enable no-unused-vars */
-
-// Prints a welcome message, and @tags the given member to encourage them to look at the message
-function printWelcomeMessage(member) {
-  const guildMemberAddMessage = `Greetings!
-  1. By default, you are restricted from viewing the spoiler channels. To gain access, please send \`!show_me_spoilers\` exactly as shown.
-  2. Please do not post spoilers in the non-spoiler channels. The spoiler channels are marked as NSFW.
-  3. In the support channels, <#${idChannelHiguSupport}> and <#${idChannelUmiSupport}>, please use spoiler tags like \`|| A banana splits into three equal pieces ||\` to hide spoilers.
-  Please see the <#${idChannelRules}> channel for the full list of rules and general information.`;
-  client.channels.get(idChannelNewArrivals).send(guildMemberAddMessage, { reply: member });
-}
 
 // Gives the 'spoiler viewer' role to the sender of the given message
 function giveMessageSenderSpoilerRole(message, idOfRoleToGive) {
@@ -91,7 +87,6 @@ const commands = {
   '!spoil_umineko': message => giveMessageSenderSpoilerRole(message, idRoleUminekoSpoilers),
   '!spoil_other': message => giveMessageSenderSpoilerRole(message, idRoleOtherGameSpoilers),
   '!unspoil': removeSpoilerRoles,
-  '!simulate_user_join': message => printWelcomeMessage(message.member),
   '!help': message => replyToMessageNoFail(message, `The following commands are available:\n - ${Object.keys(commands).join('\n - ')}`),
   '!ping': message => replyToMessageNoFail(message, 'polo'),
 };
@@ -106,12 +101,35 @@ client.on('ready', () => {
 // See https://github.com/AnIdiotsGuide/discordjs-bot-guide/blob/master/coding-guides/raw-events.md
 // Add the 'normal' role when a user leaves a reaction in the #rules channel
 client.on('raw', (packet) => {
-  if (packet.t === 'MESSAGE_REACTION_ADD' && packet.d.channel_id === idChannelRules) {
-    const userWhoReacted = client.users.get(packet.d.user_id);
-    currentGuild.fetchMember(userWhoReacted).then((memberWhoReacted) => {
-      memberWhoReacted.addRole(currentGuild.roles.get(idRoleNormalChannels));
-    }).catch(logVerbose);
+  // Check that this is a reaction add/remove message
+  if (!['MESSAGE_REACTION_ADD', 'MESSAGE_REACTION_REMOVE'].includes(packet.t)) {
+    return;
   }
+
+  // Check that the channel ID is one that we want to monitor
+  const channelId = packet.d.channel_id;
+  if (![idChannelRules, idChannelRoleAssignment].includes(channelId)) {
+    return;
+  }
+
+  // Note: packet.d.emoji.id field MAY exist, but not always.
+  const emoji = packet.d.emoji.name;
+  const userWhoReacted = client.users.get(packet.d.user_id);
+
+  currentGuild.fetchMember(userWhoReacted).then((memberWhoReacted) => {
+    if (channelId === idChannelRules) {
+      memberWhoReacted.addRole(currentGuild.roles.get(idRoleNormalChannels));
+    } else if (channelId === idChannelRoleAssignment) {
+      const maybeRoleId = emojiToRoleIDMap[emoji];
+      if (maybeRoleId !== undefined) {
+        if (packet.t === 'MESSAGE_REACTION_ADD') {
+          memberWhoReacted.addRole(currentGuild.roles.get(maybeRoleId));
+        } else {
+          memberWhoReacted.removeRole(currentGuild.roles.get(maybeRoleId));
+        }
+      }
+    }
+  }).catch(logVerbose);
 });
 
 // Create an event listener for messages
@@ -146,7 +164,7 @@ You won't be warned again until the bot is restarted.`;
   });
 });
 
-client.on('guildMemberAdd', printWelcomeMessage);
+// client.on('guildMemberAdd', printWelcomeMessage);
 
 // Log our bot in using the token from https://discordapp.com/developers/applications/me
 const tokenFileName = './token.token';
