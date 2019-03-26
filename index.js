@@ -29,12 +29,14 @@ const idRoleHigurashiSpoilers = '558567398542802944';
 const idRoleUminekoSpoilers = '559187484165144586';
 const idRoleOtherGameSpoilers = '559187572451180545';
 const idRoleNormalChannels = '559248937714712586';
+const idRoleDeveloperViewer = '559987050510811166';
 
 // Reaction to Role map
 const emojiToRoleIDMap = {
   mion: idRoleHigurashiSpoilers,
   BEATORICHE: idRoleUminekoSpoilers,
   angelmort: idRoleOtherGameSpoilers,
+  ohagi: idRoleDeveloperViewer,
 };
 
 // List of spoiler roles to remove with the !unspoil command
