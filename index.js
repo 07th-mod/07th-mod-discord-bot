@@ -40,7 +40,7 @@ const emojiToRoleIDMap = {
 };
 
 // List of spoiler roles to remove with the !unspoil command
-const unspoilerRoleIds = [idRoleHigurashiSpoilers, idRoleUminekoSpoilers, idRoleOtherGameSpoilers];
+const unspoilerRoleIds = [idRoleHigurashiSpoilers, idRoleUminekoSpoilers, idRoleOtherGameSpoilers, idRoleDeveloperViewer];
 
 const usersWhoHaveSentAttachments = new Map();
 
@@ -66,10 +66,12 @@ function replyToMessageNoFail(message, replyText) {
 function giveMessageSenderSpoilerRole(message, idOfRoleToGive) {
   logVerbose(`Trying to give spoiler role to ${message.member.user.username}`);
 
+  const roleObject = currentGuild.roles.get(idOfRoleToGive);
+
   if (message.member.roles.has(idOfRoleToGive)) {
+    replyToMessageNoFail(message, `You already have the ${roleObject.name} role!`);
     logVerbose('User already has role! ignoring request :S');
   } else {
-    const roleObject = currentGuild.roles.get(idOfRoleToGive);
     message.member.addRole(roleObject);
     replyToMessageNoFail(message, `Congratulations, you now have the ${roleObject.name} role!`);
   }
@@ -85,12 +87,13 @@ function removeSpoilerRoles(message) {
 
 // All functions here must take member as argument
 const commands = {
-  '!spoil_higurashi': message => giveMessageSenderSpoilerRole(message, idRoleHigurashiSpoilers),
-  '!spoil_umineko': message => giveMessageSenderSpoilerRole(message, idRoleUminekoSpoilers),
-  '!spoil_other': message => giveMessageSenderSpoilerRole(message, idRoleOtherGameSpoilers),
-  '!unspoil': removeSpoilerRoles,
-  '!help': message => replyToMessageNoFail(message, `The following commands are available:\n - ${Object.keys(commands).join('\n - ')}`),
-  '!ping': message => replyToMessageNoFail(message, 'polo'),
+  '!unlock_higurashi': message => giveMessageSenderSpoilerRole(message, idRoleHigurashiSpoilers),
+  '!unlock_umineko': message => giveMessageSenderSpoilerRole(message, idRoleUminekoSpoilers),
+  '!unlock_other': message => giveMessageSenderSpoilerRole(message, idRoleOtherGameSpoilers),
+  '!unlock_developer': message => giveMessageSenderSpoilerRole(message, idRoleDeveloperViewer),
+  '!accept_rules': message => giveMessageSenderSpoilerRole(message, idRoleNormalChannels),
+  '!lock': removeSpoilerRoles,
+  '!help': message => replyToMessageNoFail(message, `Please **accept the rules** by typing \`!accept_rules\` then unlock channels using the \`!unlock_[channel]\` command:\n - ${Object.keys(commands).join('\n - ')}`),
 };
 
 // The ready event is vital, it means that only _after_ this will
