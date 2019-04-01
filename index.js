@@ -73,13 +73,23 @@ function giveMessageSenderSpoilerRole(message, idOfRoleToGive) {
 
   const roleObject = currentGuild.roles.get(idOfRoleToGive);
 
+  let botReplyMessage = 'Trying to give role...';
   if (message.member.roles.has(idOfRoleToGive)) {
-    replyToMessageNoFail(message, `You already have the ${roleObject.name} role!`);
+    botReplyMessage += `You already have the ${roleObject.name} role!`;
     logVerbose('User already has role! ignoring request :S');
   } else {
+    botReplyMessage += `Congratulations, you now have the ${roleObject.name} role!`;
     message.member.addRole(roleObject);
-    replyToMessageNoFail(message, `Congratulations, you now have the ${roleObject.name} role!`);
   }
+
+  // If user gets any role, ensure they also get the 'normal viewer' role
+  if ((idOfRoleToGive !== idRoleNormalChannels)
+  && !message.member.roles.has(idRoleNormalChannels)) {
+    message.member.addRole(currentGuild.roles.get(idRoleNormalChannels));
+    botReplyMessage += '\nAlso giving normal viewer role!';
+  }
+
+  replyToMessageNoFail(message, botReplyMessage);
 }
 
 function removeSpoilerRoles(message) {
