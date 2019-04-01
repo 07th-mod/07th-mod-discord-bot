@@ -64,6 +64,11 @@ function replyToMessageNoFail(message, replyText) {
 
 // Gives the 'spoiler viewer' role to the sender of the given message
 function giveMessageSenderSpoilerRole(message, idOfRoleToGive) {
+  if (message.member === null) {
+    replyToMessageNoFail(message, '**Warning!** - Whoever sent the last message is in offline mode, and is invisible to me. Please go online so I can properly reply your message.');
+    return;
+  }
+
   logVerbose(`Trying to give spoiler role to ${message.member.user.username}`);
 
   const roleObject = currentGuild.roles.get(idOfRoleToGive);
