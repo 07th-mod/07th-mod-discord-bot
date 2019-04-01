@@ -111,6 +111,41 @@ const commands = {
   '!help': message => replyToMessageNoFail(message, `Please **accept the rules** by typing \`!accept_rules\` then unlock channels using the \`!unlock_[channel]\` command:\n - ${Object.keys(commands).join('\n - ')}`),
 };
 
+function tryFixRoles() {
+  const normalRole = currentGuild.roles.get(idRoleNormalChannels);
+  const userWhoNeedsAddRole = [];
+
+  currentGuild.members.forEach((m) => {
+    const userHasSpoilerRole = m.roles.has(idRoleHigurashiSpoilers)
+    || m.roles.has(idRoleUminekoSpoilers)
+    || m.roles.has(idRoleOtherGameSpoilers)
+    || m.roles.has(idRoleDeveloperViewer);
+
+    if (userHasSpoilerRole && !m.roles.has(idRoleNormalChannels)) {
+      logVerbose(`${m.user.username} needs update`);
+      userWhoNeedsAddRole.push(m);
+    }
+  });
+
+  let cnt = 0;
+  function fixFunction() {
+    if (cnt < userWhoNeedsAddRole.length) {
+      const m = userWhoNeedsAddRole[cnt];
+      console.log(`Fixing ${m.user.username}`);
+      m.addRole(normalRole);
+
+      cnt += 1;
+      setTimeout(fixFunction, 500);
+    } else {
+      logVerbose('Finished fixes!');
+    }
+  }
+
+  logVerbose('Begin fixing users...');
+  setTimeout(fixFunction, 0);
+  return userWhoNeedsAddRole.length;
+}
+
 // The ready event is vital, it means that only _after_ this will
 // your bot start reacting to information received from Discord
 client.on('ready', () => {
