@@ -108,7 +108,7 @@ const commands = {
   '!unlock_other': message => giveMessageSenderSpoilerRole(message, idRoleOtherGameSpoilers),
   '!unlock_developer': message => giveMessageSenderSpoilerRole(message, idRoleDeveloperViewer),
   '!lock_spoiler': removeSpoilerRoles,
-  '!help': message => replyToMessageNoFail(message, `Please unlock channels using the \`!unlock_[channel]\` command (you probably want \`!unlock_non_spoiler\`):\n - ${Object.keys(commands).join('\n - ')}`),
+  '!help': message => replyToMessageNoFail(message, `Please **read the rules** in <#512701581494583312>. Then, unlock channels using the \`!unlock_[channel]\` command:\n - ${Object.keys(commands).join('\n - ')}`),
 };
 
 function tryFixRoles() {
