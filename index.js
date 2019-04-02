@@ -102,13 +102,13 @@ function removeSpoilerRoles(message) {
 
 // All functions here must take member as argument
 const commands = {
+  '!unlock_non_spoiler': message => giveMessageSenderSpoilerRole(message, idRoleNormalChannels),
   '!unlock_higurashi': message => giveMessageSenderSpoilerRole(message, idRoleHigurashiSpoilers),
   '!unlock_umineko': message => giveMessageSenderSpoilerRole(message, idRoleUminekoSpoilers),
   '!unlock_other': message => giveMessageSenderSpoilerRole(message, idRoleOtherGameSpoilers),
   '!unlock_developer': message => giveMessageSenderSpoilerRole(message, idRoleDeveloperViewer),
-  '!unlock_non_spoiler': message => giveMessageSenderSpoilerRole(message, idRoleNormalChannels),
-  '!lock': removeSpoilerRoles,
-  '!help': message => replyToMessageNoFail(message, `Please **accept the rules** by typing \`!accept_rules\` then unlock channels using the \`!unlock_[channel]\` command:\n - ${Object.keys(commands).join('\n - ')}`),
+  '!lock_spoiler': removeSpoilerRoles,
+  '!help': message => replyToMessageNoFail(message, `Please unlock channels using the \`!unlock_[channel]\` command (you probably want \`!unlock_non_spoiler\`):\n - ${Object.keys(commands).join('\n - ')}`),
 };
 
 function tryFixRoles() {
