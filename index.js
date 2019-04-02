@@ -106,7 +106,7 @@ const commands = {
   '!unlock_umineko': message => giveMessageSenderSpoilerRole(message, idRoleUminekoSpoilers),
   '!unlock_other': message => giveMessageSenderSpoilerRole(message, idRoleOtherGameSpoilers),
   '!unlock_developer': message => giveMessageSenderSpoilerRole(message, idRoleDeveloperViewer),
-  '!accept_rules': message => giveMessageSenderSpoilerRole(message, idRoleNormalChannels),
+  '!unlock_non_spoiler': message => giveMessageSenderSpoilerRole(message, idRoleNormalChannels),
   '!lock': removeSpoilerRoles,
   '!help': message => replyToMessageNoFail(message, `Please **accept the rules** by typing \`!accept_rules\` then unlock channels using the \`!unlock_[channel]\` command:\n - ${Object.keys(commands).join('\n - ')}`),
 };
@@ -163,7 +163,7 @@ client.on('raw', (packet) => {
 
   // Check that the channel ID is one that we want to monitor
   const channelId = packet.d.channel_id;
-  if (![idChannelRules, idChannelRoleAssignment].includes(channelId)) {
+  if (![idChannelRules, idChannelBotSpam].includes(channelId)) {
     return;
   }
 
@@ -172,16 +172,15 @@ client.on('raw', (packet) => {
   const userWhoReacted = client.users.get(packet.d.user_id);
 
   currentGuild.fetchMember(userWhoReacted).then((memberWhoReacted) => {
-    if (channelId === idChannelRules) {
-      memberWhoReacted.addRole(currentGuild.roles.get(idRoleNormalChannels));
-    } else if (channelId === idChannelRoleAssignment) {
-      const maybeRoleId = emojiToRoleIDMap[emoji];
-      if (maybeRoleId !== undefined) {
-        if (packet.t === 'MESSAGE_REACTION_ADD') {
-          memberWhoReacted.addRole(currentGuild.roles.get(maybeRoleId));
-        } else {
-          memberWhoReacted.removeRole(currentGuild.roles.get(maybeRoleId));
-        }
+    // always add normal role if a user ever adds/removes any reaction
+    memberWhoReacted.addRole(currentGuild.roles.get(idRoleNormalChannels));
+
+    const maybeRoleId = emojiToRoleIDMap[emoji];
+    if (maybeRoleId !== undefined) {
+      if (packet.t === 'MESSAGE_REACTION_ADD') {
+        memberWhoReacted.addRole(currentGuild.roles.get(maybeRoleId));
+      } else {
+        memberWhoReacted.removeRole(currentGuild.roles.get(maybeRoleId));
       }
     }
   }).catch(logVerbose);
