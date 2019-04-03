@@ -18,6 +18,7 @@ let currentGuild = null;
 const guildID = '384426173821616128';
 
 // Channel IDs
+const idChannelDiscordSupport = '561722362454867968';
 const idChannelRoleAssignment = '557056028991291394';
 const idChannelBotSpam = '557048243696042055';
 const idChannelUmiSupport = '392489134721335306';
@@ -62,54 +63,125 @@ function replyToMessageNoFail(message, replyText) {
 }
 /* eslint-enable no-unused-vars */
 
-// Gives the 'spoiler viewer' role to the sender of the given message
-function giveMessageSenderSpoilerRole(message, idOfRoleToGive) {
+function userIsInvisible(message) {
   if (message.member === null) {
     replyToMessageNoFail(message, '**Warning!** - Whoever sent the last message is in offline mode, and is invisible to me. Please go online so I can properly reply your message.');
+    return true;
+  }
+
+  return false;
+}
+
+// Gives the 'spoiler viewer' role to the sender of the given message
+function giveMessageSenderSpoilerRoles(message, roleIDsToGive) {
+  if (userIsInvisible(message)) {
     return;
   }
 
   logVerbose(`Trying to give spoiler role to ${message.member.user.username}`);
 
-  const roleObject = currentGuild.roles.get(idOfRoleToGive);
+  if (!roleIDsToGive.has(idRoleNormalChannels)) {
+    roleIDsToGive.push(idRoleNormalChannels);
+  }
 
   let botReplyMessage = 'Trying to give role...';
-  if (message.member.roles.has(idOfRoleToGive)) {
-    botReplyMessage += `You already have the ${roleObject.name} role!`;
-    logVerbose('User already has role! ignoring request :S');
-  } else {
-    botReplyMessage += `Congratulations, you now have the ${roleObject.name} role!`;
-    message.member.addRole(roleObject);
-  }
 
-  // If user gets any role, ensure they also get the 'normal viewer' role
-  if ((idOfRoleToGive !== idRoleNormalChannels)
-  && !message.member.roles.has(idRoleNormalChannels)) {
-    message.member.addRole(currentGuild.roles.get(idRoleNormalChannels));
-    botReplyMessage += '\nAlso giving normal viewer role!';
-  }
+  roleIDsToGive.forEach((idOfRoleToGive) => {
+    const roleObject = currentGuild.roles.get(idOfRoleToGive);
+
+    if (message.member.roles.has(idOfRoleToGive)) {
+      botReplyMessage += `\nYou already have the ${roleObject.name} role!`;
+      logVerbose('User already has role! ignoring request :S');
+    } else {
+      botReplyMessage += `\nCongratulations, you now have the ${roleObject.name} role!`;
+      message.member.addRole(roleObject);
+    }
+  });
 
   replyToMessageNoFail(message, botReplyMessage);
 }
 
-function removeSpoilerRoles(message) {
-  unspoilerRoleIds.forEach((roleId) => {
+function removeSpoilerRoles(message, roleIDsToRemove) {
+  if (userIsInvisible(message)) {
+    return;
+  }
+
+  let botReplyMessage = 'Trying to remove role...';
+  roleIDsToRemove.forEach((roleId) => {
+    const roleObject = message.guild.roles.get(roleId);
     // eslint-disable-next-line no-unused-vars
-    message.member.removeRole(message.guild.roles.get(roleId)).catch((_ex) => {});
+    message.member.removeRole(roleObject).catch((_ex) => {});
+    botReplyMessage += `\nRemoved the ${roleObject.name} role`;
   });
-  replyToMessageNoFail(message, 'All your spoiler roles have been removed!');
+  replyToMessageNoFail(message, botReplyMessage);
 }
 
-// All functions here must take member as argument
-const commands = {
-  '!unlock_non_spoiler': message => giveMessageSenderSpoilerRole(message, idRoleNormalChannels),
-  '!unlock_higurashi': message => giveMessageSenderSpoilerRole(message, idRoleHigurashiSpoilers),
-  '!unlock_umineko': message => giveMessageSenderSpoilerRole(message, idRoleUminekoSpoilers),
-  '!unlock_other': message => giveMessageSenderSpoilerRole(message, idRoleOtherGameSpoilers),
-  '!unlock_developer': message => giveMessageSenderSpoilerRole(message, idRoleDeveloperViewer),
-  '!lock_spoiler': removeSpoilerRoles,
-  '!help': message => replyToMessageNoFail(message, `Please **read the rules** in <#512701581494583312>. Then, unlock channels using the \`!unlock_[channel]\` command:\n - ${Object.keys(commands).join('\n - ')}`),
+const tokenToChannelIDMap = {
+  // 'non spoiler' command handled separately - see scanStringForBotCommand() function
+  higurashi: idRoleHigurashiSpoilers,
+  higu: idRoleHigurashiSpoilers,
+  umineko: idRoleUminekoSpoilers,
+  umi: idRoleUminekoSpoilers,
+  developer: idRoleDeveloperViewer,
+  dev: idRoleDeveloperViewer,
+  other: idRoleOtherGameSpoilers,
 };
+
+const spoilerChannelList = [
+  idRoleHigurashiSpoilers,
+  idRoleUminekoSpoilers,
+  idRoleDeveloperViewer,
+  idRoleOtherGameSpoilers];
+
+function scanMessageForBotCommand(message) {
+  if (!message.content.startsWith('!')) {
+    return;
+  }
+
+  const tokArray = message.content.substring(1).toLowerCase().split(/\s+/);
+  const tok = new Set(tokArray);
+  const isUnlockCommand = tok.has('unlock');
+  const isLockCommand = tok.has('lock');
+
+  if (isUnlockCommand || isLockCommand) {
+    const idToUnlockList = new Set(tokArray.map(token => tokenToChannelIDMap[token])
+      .filter(x => x !== undefined));
+
+    if (tok.has('all')) {
+      spoilerChannelList.forEach(x => idToUnlockList.add(x));
+    }
+
+    if (isLockCommand && idToUnlockList.has(idRoleNormalChannels)) {
+      replyToMessageNoFail(message, 'Sorry, locking the non-spoiler channels is not allowed.');
+    }
+
+    // Unlock: Always unlock normal channels even user didn't request it
+    // Lock: Don't allow user to lock normal channels
+    if (isUnlockCommand) {
+      idToUnlockList.add(idRoleNormalChannels);
+      giveMessageSenderSpoilerRoles(message, idToUnlockList);
+    } else if (isLockCommand) {
+      idToUnlockList.delete(idRoleNormalChannels);
+      removeSpoilerRoles(message, idToUnlockList);
+    }
+
+    return;
+  }
+
+  replyToMessageNoFail(message, `Please **read the rules** in <#512701581494583312>.
+Then, use the bot like the following to lock/unlock channels:
+\`!unlock non spoiler\`
+\`!unlock umineko higurashi\`
+\`!lock developer umineko other\`
+\`!unlock all\`
+The following channels are available to unlock(as described in <#512701581494583312>):
+    - \`non spoiler\`
+    - \`umineko\`
+    - \`higurashi\`
+    - \`developer\`
+    - \`other\`
+`);
+}
 
 function tryFixRoles() {
   const normalRole = currentGuild.roles.get(idRoleNormalChannels);
@@ -190,19 +262,16 @@ client.on('raw', (packet) => {
 client.on('message', (message) => {
   logVerbose(`User [${message.author.username}|${message.author.id}] sent [${message.content}]`);
 
-  // If the message's content matches a value in the lookup table, then execute it
-  const maybeFunction = commands[message.content];
-  if (maybeFunction !== undefined) {
-    maybeFunction(message);
-  }
-
   // verify messages on the correct channel are filtered
   // To get the channel ID, follow instructions here: https://support.discordapp.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-
-  if (!(message.channel.id === idChannelBotSpam
-        || message.channel.id === idChannelUmiSupport
-        || message.channel.id === idChannelHiguSupport)) {
+  if (![idChannelBotSpam,
+    idChannelUmiSupport,
+    idChannelHiguSupport,
+    idChannelDiscordSupport].includes(message.channel.id)) {
     return;
   }
+
+  scanMessageForBotCommand(message);
 
   // TODO: this will send one message for each attachment!
   // should probably only send one message per user's message.
