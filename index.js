@@ -43,7 +43,7 @@ const emojiToRoleIDMap = {
 // List of spoiler roles to remove with the !unspoil command
 const unspoilerRoleIds = [idRoleHigurashiSpoilers, idRoleUminekoSpoilers, idRoleOtherGameSpoilers, idRoleDeveloperViewer];
 
-const usersWhoHaveSentAttachments = new Map();
+const usersWhoHaveSentAttachments = new Set();
 
 const verboseLoggingEnabled = false;
 
@@ -269,7 +269,7 @@ function warnUserEmbedOrImage(message, warnURL) {
     usersWhoHaveSentAttachments.clear();
   }
 
-  usersWhoHaveSentAttachments.set(message.author.id);
+  usersWhoHaveSentAttachments.add(message.author.id);
 
   const replyText = `Hi ${message.author.username}, it looks like you have sent an image: <${warnURL}>.
 If it contains spoilers, please re-upload the image with the '✅ Mark as Spoiler' checkbox ticked.
