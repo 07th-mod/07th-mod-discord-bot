@@ -258,6 +258,59 @@ client.on('raw', (packet) => {
   }).catch(logVerbose);
 });
 
+function warnUserEmbedOrImage(message, warnURL) {
+  // if bot remembers that the user has already sent an image before, don't message.
+  if (usersWhoHaveSentAttachments.has(message.author.id)) {
+    return;
+  }
+
+  // prevent set of past users getting too large
+  if (usersWhoHaveSentAttachments.size > 50000) {
+    usersWhoHaveSentAttachments.clear();
+  }
+
+  usersWhoHaveSentAttachments.set(message.author.id);
+
+  const replyText = `Hi ${message.author.username}, it looks like you have sent an image: <${warnURL}>.
+If it contains spoilers, please re-upload the image with the '✅ Mark as Spoiler' checkbox ticked.
+You won't be warned again until the bot is restarted.`;
+  replyToMessageNoFail(message, replyText);
+}
+
+// TODO: this will send one message for each attachment!
+// should probably only send one message per user's message.
+// Note: attachment is of type "MessageAttachment
+function scanMessageForAttachmentsAndWarnUser(message) {
+  // Scan for embeds (previews of links etc.)
+  // Need to wait some time before the message.embed field is populated.
+  // Not sure if there's an api to watch for the embed being loaded.
+  setTimeout(() => {
+    logVerbose(message.embeds);
+    message.embeds.every((messageEmbed) => {
+      if (messageEmbed.thumbnail == null) {
+        return true;
+      }
+
+      // Send at most one message
+      warnUserEmbedOrImage(message, messageEmbed.url);
+      return false;
+    });
+  }, 3000);
+
+  // Scan for attachments (files user has uploaded)
+  logVerbose(message.attachments);
+  message.attachments.array().every((attachment) => {
+    // if 'width' is undefined, is not an image
+    if (attachment.width == null) {
+      return true;
+    }
+
+    // Send at most one message
+    warnUserEmbedOrImage(message, attachment.url);
+    return false;
+  });
+}
+
 // Create an event listener for messages
 client.on('message', (message) => {
   logVerbose(`User [${message.author.username}|${message.author.id}] sent [${message.content}]`);
@@ -273,18 +326,7 @@ client.on('message', (message) => {
 
   scanMessageForBotCommand(message);
 
-  // TODO: this will send one message for each attachment!
-  // should probably only send one message per user's message.
-  message.attachments.array().forEach((attachment) => {
-    if (!usersWhoHaveSentAttachments.has(message.author.id)) {
-      usersWhoHaveSentAttachments.set(message.author.id);
-      logVerbose(attachment);
-      const replyText = `Hi ${message.author.username}, it looks like you have sent an attachment: <${attachment.url}>. 
-If it contains spoilers, please re-upload the image with the '✅ Mark as Spoiler' checkbox ticked.
-You won't be warned again until the bot is restarted.`;
-      replyToMessageNoFail(message, replyText);
-    }
-  });
+  scanMessageForAttachmentsAndWarnUser(message);
 });
 
 // client.on('guildMemberAdd', printWelcomeMessage);
