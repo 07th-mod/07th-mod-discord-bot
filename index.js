@@ -31,6 +31,7 @@ const idRoleUminekoSpoilers = '559187484165144586';
 const idRoleOtherGameSpoilers = '559187572451180545';
 const idRoleNormalChannels = '559248937714712586';
 const idRoleDeveloperViewer = '559987050510811166';
+const idRoleDeveloper = '384430157877739520';
 
 // Reaction to Role map
 const emojiToRoleIDMap = {
@@ -260,7 +261,10 @@ client.on('raw', (packet) => {
 
 function warnUserEmbedOrImage(message, warnURL) {
   // if bot remembers that the user has already sent an image before, don't message.
-  if (usersWhoHaveSentAttachments.has(message.author.id)) {
+  if (
+    usersWhoHaveSentAttachments.has(message.author.id)
+    || message.member.roles.has(idRoleDeveloper)
+  ) {
     return;
   }
 
