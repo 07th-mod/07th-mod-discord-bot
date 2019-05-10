@@ -39,6 +39,7 @@ const emojiToRoleIDMap = {
   BEATORICHE: idRoleUminekoSpoilers,
   angelmort: idRoleOtherGameSpoilers,
   ohagi: idRoleDeveloperViewer,
+//  potato: idRoleNormalChannels, //NOTE: this reaction is 'potato' not 'potato~1'
 };
 
 // List of spoiler roles to remove with the !unspoil command
