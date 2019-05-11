@@ -314,8 +314,11 @@ function scanMessageForAttachmentsAndWarnUser(message) {
         return true;
       }
 
-      // Send at most one message
-      warnUserEmbedOrImage(message, messageEmbed.url);
+      // Send at most one message. Don't warn github embeds as it's usually a flase positive
+      if (!messageEmbed.url.includes('github')) {
+        warnUserEmbedOrImage(message, messageEmbed.url);
+      }
+
       return false;
     });
   }, 3000);
