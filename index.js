@@ -5,6 +5,7 @@
  */
 
 // Import the discord.js module
+const path = require('path');
 const Discord = require('discord.js');
 const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
@@ -328,6 +329,12 @@ function scanMessageForAttachmentsAndWarnUser(message) {
   message.attachments.array().every((attachment) => {
     // if 'width' is undefined, is not an image
     if (attachment.width == null) {
+      return true;
+    }
+
+    // if the file part of the URL starts with 'SPOILER_' then it is
+    // already marked as spoiler - no warning needed
+    if (path.basename(attachment.url).toLowerCase().startsWith('spoiler_')) {
       return true;
     }
 
