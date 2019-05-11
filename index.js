@@ -7,6 +7,12 @@
 // Import the discord.js module
 const Discord = require('discord.js');
 const fs = require('fs');
+const sqlite3 = require('sqlite3').verbose();
+const db = new sqlite3.Database('warnedUsers.sql');
+// Setup sqlite database
+db.serialize(() => {
+  db.run('CREATE TABLE IF NOT EXISTS warnedUsers(authorID INTEGER PRIMARY KEY)');
+});
 
 // Create an instance of a Discord client
 const client = new Discord.Client();
@@ -45,8 +51,6 @@ const emojiToRoleIDMap = {
 // List of spoiler roles to remove with the !unspoil command
 const unspoilerRoleIds = [idRoleHigurashiSpoilers, idRoleUminekoSpoilers, idRoleOtherGameSpoilers, idRoleDeveloperViewer];
 
-const usersWhoHaveSentAttachments = new Set();
-
 const verboseLoggingEnabled = false;
 
 function logVerbose(message) {
@@ -54,6 +58,23 @@ function logVerbose(message) {
     console.log(message);
   }
 }
+
+
+// The callback function will be called with one argument - true if the user needs warning, false otherwise
+function CheckUserNeedsWarning(authorID, callback) {
+  db.serialize(() => {
+    db.get('SELECT * from warnedUsers WHERE authorID = (?)', authorID, (err, row) => {
+      if (row === undefined) {
+        db.run('INSERT INTO warnedUsers VALUES (?)', authorID);
+        callback(true);
+      } else {
+        callback(false);
+      }
+      return true;
+    });
+  });
+}
+
 
 // Tries to reply to the user, and tag the user in the message. If the bot cannot
 // talk on that channel, uses the 'new arrivals' channel. If the bot still cannot
@@ -261,25 +282,22 @@ client.on('raw', (packet) => {
 });
 
 function warnUserEmbedOrImage(message, warnURL) {
-  // if bot remembers that the user has already sent an image before, don't message.
-  if (
-    usersWhoHaveSentAttachments.has(message.author.id)
-    || message.member.roles.has(idRoleDeveloper)
-  ) {
+  if (message.member.roles.has(idRoleDeveloper)) {
     return;
   }
 
-  // prevent set of past users getting too large
-  if (usersWhoHaveSentAttachments.size > 50000) {
-    usersWhoHaveSentAttachments.clear();
-  }
+  CheckUserNeedsWarning(message.author.id, (needsWarning) => {
+    // if bot remembers that the user has already sent an image before, don't message.
+    if (!needsWarning) {
+      return;
+    }
 
-  usersWhoHaveSentAttachments.add(message.author.id);
-
-  const replyText = `Hi ${message.author.username}, it looks like you have sent an image: <${warnURL}>.
+    const replyText = `Hi ${message.author.username}, it looks like you have sent an image: <${warnURL}>.
 If it contains spoilers, please re-upload the image with the '✅ Mark as Spoiler' checkbox ticked.
 You won't be warned again until the bot is restarted.`;
-  replyToMessageNoFail(message, replyText);
+
+    replyToMessageNoFail(message, replyText);
+  });
 }
 
 // TODO: this will send one message for each attachment!
