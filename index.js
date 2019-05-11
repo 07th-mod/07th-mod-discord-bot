@@ -294,8 +294,7 @@ function warnUserEmbedOrImage(message, warnURL) {
     }
 
     const replyText = `Hi ${message.author.username}, it looks like you have sent an image: <${warnURL}>.
-If it contains spoilers, please re-upload the image with the '✅ Mark as Spoiler' checkbox ticked.
-You won't be warned again until the bot is restarted.`;
+If it contains spoilers, please re-upload the image with the '✅ Mark as Spoiler' checkbox ticked.`;
 
     replyToMessageNoFail(message, replyText);
   });
