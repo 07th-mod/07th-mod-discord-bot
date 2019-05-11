@@ -5,7 +5,7 @@
 1. You must have the following dependencies installed:
     - node.js (this will install npm)
 2. Clone this git repository
-3. Run `npm install`
+3. Run `npm install`, `npm install discord`, `npm install sqlite3`
 4. Obtain a discord bot token (TODO: add instructions for this). **Keep this token private!**
 5. Save the token in a file called `token.token`, with nothing else in the file **Do not upload this token to Github! (it's in the .gitignore)**
 6. Run `npm start` to run the bot
