@@ -26,7 +26,6 @@ const guildID = '384426173821616128';
 
 // Channel IDs
 const idChannelDiscordSupport = '561722362454867968';
-const idChannelRoleAssignment = '557056028991291394';
 const idChannelBotSpam = '557048243696042055';
 const idChannelUmiSupport = '392489134721335306';
 const idChannelHiguSupport = '392489108875771906';
