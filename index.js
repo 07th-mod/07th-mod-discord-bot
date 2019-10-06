@@ -37,19 +37,21 @@ const idRoleUminekoSpoilers = '559187484165144586';
 const idRoleOtherGameSpoilers = '559187572451180545';
 const idRoleNormalChannels = '559248937714712586';
 const idRoleDeveloperViewer = '559987050510811166';
+const idRoleCiconia = '630212573408788501';
 const idRoleDeveloper = '384430157877739520';
 
 // Reaction to Role map
 const emojiToRoleIDMap = {
   mion: idRoleHigurashiSpoilers,
   BEATORICHE: idRoleUminekoSpoilers,
+  stun_gun: idRoleCiconia,
   angelmort: idRoleOtherGameSpoilers,
   ohagi: idRoleDeveloperViewer,
 //  potato: idRoleNormalChannels, //NOTE: this reaction is 'potato' not 'potato~1'
 };
 
 // List of spoiler roles to remove with the !unspoil command
-const unspoilerRoleIds = [idRoleHigurashiSpoilers, idRoleUminekoSpoilers, idRoleOtherGameSpoilers, idRoleDeveloperViewer];
+const unspoilerRoleIds = [idRoleHigurashiSpoilers, idRoleUminekoSpoilers, idRoleCiconia, idRoleOtherGameSpoilers, idRoleDeveloperViewer];
 
 const verboseLoggingEnabled = false;
 
@@ -145,6 +147,7 @@ const tokenToChannelIDMap = {
   higu: idRoleHigurashiSpoilers,
   umineko: idRoleUminekoSpoilers,
   umi: idRoleUminekoSpoilers,
+  ciconia: idRoleCiconia,
   developer: idRoleDeveloperViewer,
   dev: idRoleDeveloperViewer,
   other: idRoleOtherGameSpoilers,
@@ -153,6 +156,7 @@ const tokenToChannelIDMap = {
 const spoilerChannelList = [
   idRoleHigurashiSpoilers,
   idRoleUminekoSpoilers,
+  idRoleCiconia,
   idRoleDeveloperViewer,
   idRoleOtherGameSpoilers];
 
@@ -214,7 +218,8 @@ function tryFixRoles() {
     const userHasSpoilerRole = m.roles.has(idRoleHigurashiSpoilers)
     || m.roles.has(idRoleUminekoSpoilers)
     || m.roles.has(idRoleOtherGameSpoilers)
-    || m.roles.has(idRoleDeveloperViewer);
+    || m.roles.has(idRoleDeveloperViewer)
+    || m.roles.has(idRoleCiconia);
 
     if (userHasSpoilerRole && !m.roles.has(idRoleNormalChannels)) {
       logVerbose(`${m.user.username} needs update`);
