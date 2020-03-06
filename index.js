@@ -195,6 +195,23 @@ function scanMessageForBotCommand(message) {
     return;
   }
 
+  if (tok.has('faq') || tok.has('trouble') || tok.has('troubleshoot') || tok.has('troubleshooting')) {
+    const reply = ['Please check if your question is already answered on our FAQs:',
+      'Installer Troubleshooting: <https://07th-mod.com/wiki/Higurashi/Higurashi-Part-1---Voice-and-Graphics-Patch/#connection-troubleshooting>'];
+
+    if (message.channel.id !== idChannelHiguSupport) {
+      reply.push('Umineko Troubleshooting: <https://07th-mod.com/wiki/Umineko/Umineko-Part-0-TroubleShooting-and-FAQ/>')
+    }
+
+    if (message.channel.id !== idChannelUmiSupport) {
+      reply.push('Higurashi Troubleshooting: <http://07th-mod.com/wiki/Higurashi/FAQ/>')
+    }
+
+    replyToMessageNoFail(message, reply.join('\n\n'));
+
+    return;
+  }
+
   replyToMessageNoFail(message, `Please **read the rules** in <#512701581494583312>.
 Then, use the bot like the following to lock/unlock channels:
 \`!unlock non spoiler\`
