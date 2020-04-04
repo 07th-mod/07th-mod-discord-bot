@@ -39,6 +39,7 @@ const idRoleNormalChannels = '559248937714712586';
 const idRoleDeveloperViewer = '559987050510811166';
 const idRoleCiconia = '630212573408788501';
 const idRoleDeveloper = '384430157877739520';
+const idRoleNSFW = '695820980689305712';
 
 // Reaction to Role map
 const emojiToRoleIDMap = {
@@ -47,11 +48,12 @@ const emojiToRoleIDMap = {
   stun_gun: idRoleCiconia,
   angelmort: idRoleOtherGameSpoilers,
   ohagi: idRoleDeveloperViewer,
+  hatchet: idRoleNSFW,
 //  potato: idRoleNormalChannels, //NOTE: this reaction is 'potato' not 'potato~1'
 };
 
 // List of spoiler roles to remove with the !unspoil command
-const unspoilerRoleIds = [idRoleHigurashiSpoilers, idRoleUminekoSpoilers, idRoleCiconia, idRoleOtherGameSpoilers, idRoleDeveloperViewer];
+const unspoilerRoleIds = [idRoleHigurashiSpoilers, idRoleUminekoSpoilers, idRoleCiconia, idRoleOtherGameSpoilers, idRoleDeveloperViewer, idRoleNSFW];
 
 const verboseLoggingEnabled = false;
 
@@ -151,6 +153,7 @@ const tokenToChannelIDMap = {
   developer: idRoleDeveloperViewer,
   dev: idRoleDeveloperViewer,
   other: idRoleOtherGameSpoilers,
+  nsfw: idRoleNSFW,
 };
 
 const spoilerChannelList = [
@@ -158,7 +161,9 @@ const spoilerChannelList = [
   idRoleUminekoSpoilers,
   idRoleCiconia,
   idRoleDeveloperViewer,
-  idRoleOtherGameSpoilers];
+  idRoleOtherGameSpoilers,
+  idRoleNSFW,
+];
 
 function scanMessageForBotCommand(message) {
   if (!message.content.startsWith('!')) {
@@ -224,6 +229,7 @@ The following channels are available to unlock(as described in <#512701581494583
     - \`higurashi\`
     - \`developer\`
     - \`other\`
+    - \`nsfw\`
 `);
 }
 
@@ -236,7 +242,8 @@ function tryFixRoles() {
     || m.roles.has(idRoleUminekoSpoilers)
     || m.roles.has(idRoleOtherGameSpoilers)
     || m.roles.has(idRoleDeveloperViewer)
-    || m.roles.has(idRoleCiconia);
+    || m.roles.has(idRoleCiconia)
+    || m.roles.has(idRoleNSFW);
 
     if (userHasSpoilerRole && !m.roles.has(idRoleNormalChannels)) {
       logVerbose(`${m.user.username} needs update`);
