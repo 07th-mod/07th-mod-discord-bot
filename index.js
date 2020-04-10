@@ -371,14 +371,14 @@ First, check if your question is already answered in the FAQs:
 If your question is not answered, please fill in the below information (if applicable) and post it in the <#392489108875771906> or <#392489134721335306> channel:
 
 - Explain the problem you're having [eg. The game crashes on startup]
-- State the game: [eg. "Higurashi Ch.3"]
-- State the mod variant: [ADV or Full or Voice Only]
-- State the game version: [Steam or Mangagamer or GOG]
-- State your OS: [Windows or Mac or Linux (linux native? Linux with Wine or Proton?)]
-- State method used to install the game: [Manually / using the Automatic Installer]
-- State how long ago you installed the mod: [Yesterday / A Month ago etc.]
+- State the game: [eg. "Higurashi Ch.3", "Umineko Answer Arcs"]
+- State the mod variant: [Full/Voice Only (or ADV for Umineko)]
+- State the store you bought from: [Steam/Mangagamer/GOG]
+- State your OS: [Windows/Mac/Linux (Linux native? Linux with Wine or Proton?)]
+- State method used to install the game: [Manually/Using the Automatic Installer]
+- State how long ago you installed the mod: [Yesterday/A Month ago etc.]
 - Provide a [screenshot of/near the bug], if applicable
-- State anything "special" about your computer's setup [School/Company Computer / Old Laptop with Integrated Graphics]
+- State anything "special" about your computer's setup [School/Company Computer/Old Laptop with Integrated Graphics]
 - Provide your [installer log file], if you have an install issues (See http://07th-mod.com/wiki/Installer/support/)
 - Provide your [game log file], if your game is crashing (See http://07th-mod.com/wiki/Higurashi/support/ or http://07th-mod.com/wiki/Umineko/support/)
 
