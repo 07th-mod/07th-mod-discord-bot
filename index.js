@@ -13,6 +13,7 @@ const db = new sqlite3.Database('warnedUsers.sql');
 // Setup sqlite database
 db.serialize(() => {
   db.run('CREATE TABLE IF NOT EXISTS warnedUsers(authorID INTEGER PRIMARY KEY)');
+  db.run('CREATE TABLE IF NOT EXISTS firstTimeSupportUsers(authorID INTEGER PRIMARY KEY)');
 });
 
 // Create an instance of a Discord client
@@ -79,6 +80,21 @@ function CheckUserNeedsWarning(authorID, callback) {
   });
 }
 
+// The callback function will be called with one argument - true if the user needs first time support message, false otherwise
+function CheckUserNeedsFirstTimeSupport(authorID, callback) {
+  db.serialize(() => {
+    db.get('SELECT * from firstTimeSupportUsers WHERE authorID = (?)', authorID, (err, row) => {
+      if (row === undefined) {
+        db.run('INSERT INTO firstTimeSupportUsers VALUES (?)', authorID);
+        callback(true);
+      } else {
+        callback(false);
+      }
+      return true;
+    });
+  });
+}
+
 
 // Tries to reply to the user, and tag the user in the message. If the bot cannot
 // talk on that channel, uses the 'new arrivals' channel. If the bot still cannot
@@ -86,6 +102,11 @@ function CheckUserNeedsWarning(authorID, callback) {
 /* eslint-disable no-unused-vars */
 function replyToMessageNoFail(message, replyText) {
   message.channel.send(replyText, { reply: message.member })
+    .catch(___exception => console.error('replyToMessageNoFail(): failed to send reply'));
+}
+
+function replyAsPrivateMessageNoFail(message, replyText) {
+  message.author.send(replyText, { reply: message.member })
     .catch(___exception => console.error('replyToMessageNoFail(): failed to send reply'));
 }
 /* eslint-enable no-unused-vars */
@@ -328,6 +349,45 @@ If it contains spoilers, please re-upload the image with the '✅ Mark as Spoile
   });
 }
 
+function scanUserNeedsFirstTimeSupport(message) {
+  if (message.member.roles.has(idRoleDeveloper)) {
+    return;
+  }
+
+  CheckUserNeedsFirstTimeSupport(message.author.id, (needsWarning) => {
+    // if bot remembers that the user has already had first time support, don't message.
+    if (!needsWarning) {
+      return;
+    }
+
+    const replyText = `---- 07th-mod Bot Automatic Response ----
+
+It appears you are looking for support (if not, please ignore this message).
+First, check if your question is already answered in the FAQs:
+- Installer FAQ: http://07th-mod.com/wiki/Installer/faq/
+- Higurashi FAQ: http://07th-mod.com/wiki/Higurashi/FAQ/
+- Umineko FAQ: http://07th-mod.com/wiki/Umineko/Umineko-Part-0-TroubleShooting-and-FAQ/
+
+If your question is not answered, please fill in the below information (if applicable) and post it in the <#392489108875771906> or <#392489134721335306> channel:
+
+- Explain the problem you're having [eg. The game crashes on startup]
+- State the game: [eg. "Higurashi Ch.3"]
+- State the mod variant: [ADV or Full or Voice Only]
+- State the game version: [Steam or Mangagamer or GOG]
+- State your OS: [Windows or Mac or Linux (linux native? Linux with Wine or Proton?)]
+- State method used to install the game: [Manually / using the Automatic Installer]
+- State how long ago you installed the mod: [Yesterday / A Month ago etc.]
+- Provide a [screenshot of/near the bug], if applicable
+- State anything "special" about your computer's setup [School/Company Computer / Old Laptop with Integrated Graphics]
+- Provide your [installer log file], if you have an install issues (See http://07th-mod.com/wiki/Installer/support/)
+- Provide your [game log file], if your game is crashing (See http://07th-mod.com/wiki/Higurashi/support/ or http://07th-mod.com/wiki/Umineko/support/)
+
+**DO NOT REPLY TO THIS BOT - Please reply in the <#392489108875771906> or <#392489134721335306> channel**`;
+
+    replyAsPrivateMessageNoFail(message, replyText);
+  });
+}
+
 // TODO: this will send one message for each attachment!
 // should probably only send one message per user's message.
 // Note: attachment is of type "MessageAttachment
@@ -377,16 +437,20 @@ client.on('message', (message) => {
 
   // verify messages on the correct channel are filtered
   // To get the channel ID, follow instructions here: https://support.discordapp.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-
-  if (![idChannelBotSpam,
+  if ([idChannelBotSpam,
     idChannelUmiSupport,
     idChannelHiguSupport,
     idChannelDiscordSupport].includes(message.channel.id)) {
-    return;
+    scanMessageForBotCommand(message);
+    scanMessageForAttachmentsAndWarnUser(message);
   }
 
-  scanMessageForBotCommand(message);
-
-  scanMessageForAttachmentsAndWarnUser(message);
+  // Only send firstTimeSupport to #umi_support and #higu_support (#bot_spam_2 is for testing)
+  if ([idChannelBotSpam,
+    idChannelUmiSupport,
+    idChannelHiguSupport].includes(message.channel.id)) {
+    scanUserNeedsFirstTimeSupport(message);
+  }
 });
 
 // client.on('guildMemberAdd', printWelcomeMessage);
