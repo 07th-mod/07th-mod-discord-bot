@@ -377,12 +377,12 @@ If your question is not answered, please fill in the below information (if appli
 - State your OS: [Windows/Mac/Linux (Linux native? Linux with Wine or Proton?)]
 - State method used to install the game: [Manually/Using the Automatic Installer]
 - State how long ago you installed the mod: [Yesterday/A Month ago etc.]
-- Provide a [screenshot of/near the bug], if applicable
+- Provide a [screenshot of/near the bug], if applicable (**Please make sure to spoiler tag spoiler images!**)
 - State anything "special" about your computer's setup [School/Company Computer/Old Laptop with Integrated Graphics]
 - Provide your [installer log file], if you have an install issues (See http://07th-mod.com/wiki/Installer/support/)
 - Provide your [game log file], if your game is crashing (See http://07th-mod.com/wiki/Higurashi/support/ or http://07th-mod.com/wiki/Umineko/support/)
 
-**DO NOT REPLY TO THIS BOT - Please reply in the <#392489108875771906> or <#392489134721335306> channel**`;
+**Do not reply to this bot - Please reply in the <#392489108875771906> or <#392489134721335306> channel. PLEASE SPOILER TAG ALL SPOILERS**`;
 
     replyAsPrivateMessageNoFail(message, replyText);
   });
