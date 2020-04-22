@@ -360,29 +360,10 @@ function scanUserNeedsFirstTimeSupport(message) {
       return;
     }
 
-    const replyText = `---- 07th-mod Bot Automatic Response ----
+    const replyText = `**Please follow the support checklist**: https://07th-mod.com/wiki/support-checklist/
+**Make sure to fill in the template**, then copy and paste it into the <#392489108875771906> or <#392489134721335306> channels.
 
-It appears you are looking for support (if not, please ignore this message).
-First, check if your question is already answered in the FAQs:
-- Installer FAQ: http://07th-mod.com/wiki/Installer/faq/
-- Higurashi FAQ: http://07th-mod.com/wiki/Higurashi/FAQ/
-- Umineko FAQ: http://07th-mod.com/wiki/Umineko/Umineko-Part-0-TroubleShooting-and-FAQ/
-
-If your question is not answered, please fill in the below information (if applicable) and post it in the <#392489108875771906> or <#392489134721335306> channel:
-
-- Explain the problem you're having [eg. The game crashes on startup]
-- State the game: [eg. "Higurashi Ch.3", "Umineko Answer Arcs"]
-- State the mod variant: [Full/Voice Only (or ADV for Umineko)]
-- State the store you bought from: [Steam/Mangagamer/GOG]
-- State your OS: [Windows/Mac/Linux (Linux native? Linux with Wine or Proton?)]
-- State method used to install the game: [Manually/Using the Automatic Installer]
-- State how long ago you installed the mod: [Yesterday/A Month ago etc.]
-- Provide a [screenshot of/near the bug], if applicable (**Please make sure to spoiler tag spoiler images!**)
-- State anything "special" about your computer's setup [School/Company Computer/Old Laptop with Integrated Graphics]
-- Provide your [installer log file], if you have an install issues (See http://07th-mod.com/wiki/Installer/support/)
-- Provide your [game log file], if your game is crashing (See http://07th-mod.com/wiki/Higurashi/support/ or http://07th-mod.com/wiki/Umineko/support/)
-
-**Do not reply to this bot - Please reply in the <#392489108875771906> or <#392489134721335306> channel. PLEASE SPOILER TAG ALL SPOILERS**`;
+Filling in the template helps us answer you as quickly as possible.`;
 
     replyAsPrivateMessageNoFail(message, replyText);
   });
