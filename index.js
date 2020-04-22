@@ -368,7 +368,7 @@ First, check if your question is already answered in the FAQs:
 - Higurashi FAQ: http://07th-mod.com/wiki/Higurashi/FAQ/
 - Umineko FAQ: http://07th-mod.com/wiki/Umineko/Umineko-Part-0-TroubleShooting-and-FAQ/
 
-If your question is not answered, please fill in the below information (if applicable):
+If your question is not answered, please fill in the below information (if applicable) and post it in the <#392489108875771906> or <#392489134721335306> channel:
 
 - Explain the problem you're having [eg. The game crashes on startup]
 - State the game: [eg. "Higurashi Ch.3", "Umineko Answer Arcs"]
@@ -380,9 +380,11 @@ If your question is not answered, please fill in the below information (if appli
 - Provide a [screenshot of/near the bug], if applicable (**Please make sure to spoiler tag spoiler images!**)
 - State anything "special" about your computer's setup [School/Company Computer/Old Laptop with Integrated Graphics]
 - Provide your [installer log file], if you have an install issues (See http://07th-mod.com/wiki/Installer/support/)
-- Provide your [game log file], if your game is crashing (See http://07th-mod.com/wiki/Higurashi/support/ or http://07th-mod.com/wiki/Umineko/support/)`;
+- Provide your [game log file], if your game is crashing (See http://07th-mod.com/wiki/Higurashi/support/ or http://07th-mod.com/wiki/Umineko/support/)
 
-    replyToMessageNoFail(message, replyText);
+**Do not reply to this bot - Please reply in the <#392489108875771906> or <#392489134721335306> channel. PLEASE SPOILER TAG ALL SPOILERS**`;
+
+    replyAsPrivateMessageNoFail(message, replyText);
   });
 }
 
