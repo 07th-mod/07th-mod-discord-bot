@@ -6,12 +6,8 @@ const path = require('path');
 const Discord = require('discord.js');
 const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('warnedUsers.sql');
-// Setup sqlite database
-db.serialize(() => {
-  db.run('CREATE TABLE IF NOT EXISTS warnedUsers(authorID INTEGER PRIMARY KEY)');
-  db.run('CREATE TABLE IF NOT EXISTS firstTimeSupportUsers(authorID INTEGER PRIMARY KEY)');
-});
+const sqlite = require('sqlite').verbose();
+const db = null;
 
 // Create an instance of a Discord client
 const client = new Discord.Client({
@@ -171,35 +167,202 @@ async function removeSpoilerRoles(message, roleIDsToRemove) {
   }
 }
 
+const tokenToChannelIDMap = {
+  // 'non spoiler' command handled separately - see scanStringForBotCommand() function
+  higurashi: idRoleHigurashiSpoilers,
+  higu: idRoleHigurashiSpoilers,
+  umineko: idRoleUminekoSpoilers,
+  umi: idRoleUminekoSpoilers,
+  ciconia: idRoleCiconia,
+  developer: idRoleDeveloperViewer,
+  dev: idRoleDeveloperViewer,
+  other: idRoleOtherGameSpoilers,
+  nsfw: idRoleNSFW,
+};
 
-// The ready event is vital, it means that only _after_ this will
-// your bot start reacting to information received from Discord
-client.on('ready', () => {
-  logVerbose('Successfuly connected to discord servers!');
-});
-
-// You can also try to upgrade partials to full instances:
-client.on('messageReactionAdd', async (reaction, user) => {
-  handleAddOrRemove(reaction, user, false);
-});
-
-client.on('messageReactionRemove', async (reaction, user) => {
-  handleAddOrRemove(reaction, user, true);
-});
+const spoilerChannelList = [
+  idRoleHigurashiSpoilers,
+  idRoleUminekoSpoilers,
+  idRoleCiconia,
+  idRoleDeveloperViewer,
+  idRoleOtherGameSpoilers,
+  idRoleNSFW,
+];
 
 
-async function handleAddOrRemove(reaction, user, isRemove) {
+async function scanMessageForBotCommand(message) {
+  if (!message.content.startsWith('!')) {
+    return;
+  }
+
+  const tokArray = message.content.substring(1).toLowerCase().split(/\s+/);
+  const tok = new Set(tokArray);
+  const isUnlockCommand = tok.has('unlock');
+  const isLockCommand = tok.has('lock');
+
+  if (isUnlockCommand || isLockCommand) {
+    const idToUnlockList = new Set(tokArray.map(token => tokenToChannelIDMap[token])
+      .filter(x => x !== undefined));
+
+    if (tok.has('all')) {
+      spoilerChannelList.forEach(x => idToUnlockList.add(x));
+    }
+
+    if (isLockCommand && idToUnlockList.has(idRoleNormalChannels)) {
+      await replyToMessageNoFail(message, 'Sorry, locking the non-spoiler channels is not allowed.');
+    }
+
+    // Unlock: Always unlock normal channels even user didn't request it
+    // Lock: Don't allow user to lock normal channels
+    if (isUnlockCommand) {
+      idToUnlockList.add(idRoleNormalChannels);
+      await giveMessageSenderSpoilerRoles(message, idToUnlockList);
+    } else if (isLockCommand) {
+      idToUnlockList.delete(idRoleNormalChannels);
+      await removeSpoilerRoles(message, idToUnlockList);
+    }
+
+    return;
+  }
+
+  if (tok.has('faq') || tok.has('trouble') || tok.has('troubleshoot') || tok.has('troubleshooting')) {
+    const reply = ['Please check if your question is already answered on our FAQs:',
+      'Installer Troubleshooting: <https://07th-mod.com/wiki/Higurashi/Higurashi-Part-1---Voice-and-Graphics-Patch/#connection-troubleshooting>'];
+
+    if (message.channel.id !== idChannelHiguSupport) {
+      reply.push('Umineko Troubleshooting: <https://07th-mod.com/wiki/Umineko/Umineko-Part-0-TroubleShooting-and-FAQ/>')
+    }
+
+    if (message.channel.id !== idChannelUmiSupport) {
+      reply.push('Higurashi Troubleshooting: <http://07th-mod.com/wiki/Higurashi/FAQ/>')
+    }
+
+    await replyToMessageNoFail(message, reply.join('\n\n'));
+
+    return;
+  }
+
+  await replyToMessageNoFail(message, `Please **read the rules** in <#512701581494583312>.
+Then, use the bot like the following to lock/unlock channels:
+\`!unlock non spoiler\`
+\`!unlock umineko higurashi\`
+\`!lock developer umineko other\`
+\`!unlock all\`
+The following channels are available to unlock(as described in <#512701581494583312>):
+    - \`non spoiler\`
+    - \`umineko\`
+    - \`higurashi\`
+    - \`developer\`
+    - \`other\`
+    - \`nsfw\`
+`);
+}
+
+
+async function handleAddOrRemoveReaction(reaction, user, isRemove) {
   // If a message gains a reaction and it is uncached, fetch and cache the message
   // You should account for any errors while fetching, it could return API errors if the resource is missing
+  if (reaction.partial) await reaction.fetch();
   if (reaction.message.partial) await reaction.message.fetch();
+  if (user.partial) await user.fetch();
+
   // Now the message has been cached and is fully available:
-  console.log(`${reaction.message.author}'s message "${reaction.message.content}" gained a reaction!`);
+  console.log(`${reaction.message.author}'s message gained a reaction!`);
   // Fetches and caches the reaction itself, updating resources that were possibly defunct.
   if (reaction.partial) await reaction.fetch();
   // Now the reaction is fully available and the properties will be reflected accurately:
   console.log(`${reaction.count} user(s) have given the same reaction to this message!`);
+
+  const currentGuild = reaction.message.channel.guild;
+
+  if (!user || user.bot || !currentGuild) {
+    return;
+  }
+
+  // Check that the channel ID is one that we want to monitor
+  if (![idChannelRules, idChannelBotSpam].includes(reaction.message.channel.id)) {
+    return;
+  }
+
+  const memberWhoReacted = await currentGuild.members.fetch(message.user.id);
+
+  // always add normal role if a user ever adds/removes any reaction
+  memberWhoReacted.roles.add(currentGuild.roles.cache.get(idRoleNormalChannels));
+
+  const maybeRoleId = emojiToRoleIDMap[reaction.message.emoji.name];
+  if (maybeRoleId !== undefined) {
+    if (isRemove) {
+      await memberWhoReacted.roles.remove(currentGuild.roles.cache.get(maybeRoleId));
+    } else {
+      await memberWhoReacted.roles.add(currentGuild.roles.cache.get(maybeRoleId));
+    }
+  }
 }
 
+function warnUserEmbedOrImage(message, warnURL) {
+  if (message.member.roles.cache.has(idRoleDeveloper)) {
+    return;
+  }
+
+  CheckUserNeedsWarning(message.author.id, (needsWarning) => {
+    // if bot remembers that the user has already sent an image before, don't message.
+    if (!needsWarning) {
+      return;
+    }
+
+    const replyText = `Hi ${message.author.username}, it looks like you have sent an image: <${warnURL}>.
+If it contains spoilers, please re-upload the image with the '✅ Mark as Spoiler' checkbox ticked.`;
+
+    await replyToMessageNoFail(message, replyText);
+  });
+}
+
+function scanUserNeedsFirstTimeSupport(message) {
+  if (message.member.roles.cache.has(idRoleDeveloper)) {
+    return;
+  }
+
+  CheckUserNeedsFirstTimeSupport(message.author.id, (needsWarning) => {
+    // if bot remembers that the user has already had first time support, don't message.
+    if (!needsWarning) {
+      return;
+    }
+
+    const replyText = `**Please follow the support checklist**: https://07th-mod.com/wiki/support-checklist/
+**Make sure to fill in the template**, then copy and paste it into the <#392489108875771906> or <#392489134721335306> channels.
+
+Filling in the template helps us answer you as quickly as possible.`;
+
+    await replyToMessageNoFail(message, replyText, true);
+  });
+}
+
+
+
+client.on('ready', () => {
+  logVerbose('Successfuly connected to discord servers!');
+});
+
+client.on('messageReactionAdd', async (reaction, user) => {
+  handleAddOrRemoveReaction(reaction, user, false);
+});
+
+client.on('messageReactionRemove', async (reaction, user) => {
+  handleAddOrRemoveReaction(reaction, user, true);
+});
+
+(async () => {
+  const db = await sqlite.open({
+    filename: '/tmp/database.db',
+    driver: sqlite3.Database
+  })
+})()
+
+// Setup sqlite database
+db.serialize(() => {
+  db.run('CREATE TABLE IF NOT EXISTS warnedUsers(authorID INTEGER PRIMARY KEY)');
+  db.run('CREATE TABLE IF NOT EXISTS firstTimeSupportUsers(authorID INTEGER PRIMARY KEY)');
+});
 
 
 // Log our bot in using the token from https://discordapp.com/developers/applications/me
