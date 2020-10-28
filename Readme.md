@@ -1,4 +1,39 @@
-# 07th Mod Bot
+# We've switched over to YAGPDB so this repo is no longer used or updated.
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+# 07th Mod Bot (Old Instructions)
 
 ## Installation
 
