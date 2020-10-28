@@ -1,3 +1,4 @@
+/* eslint-disable linebreak-style */
 'use strict';
 
 /**
@@ -17,10 +18,13 @@ db.serialize(() => {
 });
 
 // Create an instance of a Discord client
-const client = new Discord.Client();
+const client = new Discord.Client({
+  ws: { intents: ['GUILDS', 'GUILD_EMOJIS', 'GUILD_MESSAGES', 'GUILD_MESSAGE_REACTIONS', 'DIRECT_MESSAGES'] },
+  //partials: ['MESSAGE', 'CHANNEL', 'REACTION'], // Used for roles, see https://discordjs.guide/popular-topics/reactions.html#awaiting-reactions
+});
 
 // This is assigned once connection is established
-let currentGuild = null;
+// let currentGuild = null;
 
 // 07th mod guild ID
 const guildID = '384426173821616128';
@@ -102,12 +106,18 @@ function CheckUserNeedsFirstTimeSupport(authorID, callback) {
 /* eslint-disable no-unused-vars */
 function replyToMessageNoFail(message, replyText) {
   message.channel.send(replyText, { reply: message.member })
-    .catch(___exception => console.error('replyToMessageNoFail(): failed to send reply'));
+    .catch(___exception => {
+      console.error('replyToMessageNoFail(): failed to send reply');
+      console.error(___exception);
+    });
 }
 
 function replyAsPrivateMessageNoFail(message, replyText) {
   message.author.send(replyText, { reply: message.member })
-    .catch(___exception => console.error('replyToMessageNoFail(): failed to send reply'));
+    .catch(___exception => {
+      console.error('replyToMessageNoFail(): failed to send reply');
+      console.error(___exception);
+    });
 }
 /* eslint-enable no-unused-vars */
 
@@ -135,14 +145,15 @@ function giveMessageSenderSpoilerRoles(message, roleIDsToGive) {
   let botReplyMessage = 'Trying to give role...';
 
   roleIDsToGive.forEach((idOfRoleToGive) => {
-    const roleObject = currentGuild.roles.get(idOfRoleToGive);
+    const currentGuild = message.channel.guild;
+    const roleObject = currentGuild.roles.cache.get(idOfRoleToGive);
 
-    if (message.member.roles.has(idOfRoleToGive)) {
+    if (message.member.roles.cache.has(idOfRoleToGive)) {
       botReplyMessage += `\nYou already have the ${roleObject.name} role!`;
       logVerbose('User already has role! ignoring request :S');
     } else {
       botReplyMessage += `\nCongratulations, you now have the ${roleObject.name} role!`;
-      message.member.addRole(roleObject);
+      message.member.roles.add(roleObject);
     }
   });
 
@@ -156,9 +167,9 @@ function removeSpoilerRoles(message, roleIDsToRemove) {
 
   let botReplyMessage = 'Trying to remove role...';
   roleIDsToRemove.forEach((roleId) => {
-    const roleObject = message.guild.roles.get(roleId);
+    const roleObject = message.guild.roles.cache.get(roleId);
     // eslint-disable-next-line no-unused-vars
-    message.member.removeRole(roleObject).catch((_ex) => {});
+    message.member.roles.remove(roleObject).catch((_ex) => {});
     botReplyMessage += `\nRemoved the ${roleObject.name} role`;
   });
   replyToMessageNoFail(message, botReplyMessage);
@@ -254,85 +265,115 @@ The following channels are available to unlock(as described in <#512701581494583
 `);
 }
 
-function tryFixRoles() {
-  const normalRole = currentGuild.roles.get(idRoleNormalChannels);
-  const userWhoNeedsAddRole = [];
-
-  currentGuild.members.forEach((m) => {
-    const userHasSpoilerRole = m.roles.has(idRoleHigurashiSpoilers)
-    || m.roles.has(idRoleUminekoSpoilers)
-    || m.roles.has(idRoleOtherGameSpoilers)
-    || m.roles.has(idRoleDeveloperViewer)
-    || m.roles.has(idRoleCiconia)
-    || m.roles.has(idRoleNSFW);
-
-    if (userHasSpoilerRole && !m.roles.has(idRoleNormalChannels)) {
-      logVerbose(`${m.user.username} needs update`);
-      userWhoNeedsAddRole.push(m);
-    }
-  });
-
-  let cnt = 0;
-  function fixFunction() {
-    if (cnt < userWhoNeedsAddRole.length) {
-      const m = userWhoNeedsAddRole[cnt];
-      console.log(`Fixing ${m.user.username}`);
-      m.addRole(normalRole);
-
-      cnt += 1;
-      setTimeout(fixFunction, 500);
-    } else {
-      logVerbose('Finished fixes!');
-    }
-  }
-
-  logVerbose('Begin fixing users...');
-  setTimeout(fixFunction, 0);
-  return userWhoNeedsAddRole.length;
-}
-
+var collector = null;
 // The ready event is vital, it means that only _after_ this will
 // your bot start reacting to information received from Discord
 client.on('ready', () => {
   logVerbose('Successfuly connected to discord servers!');
-  currentGuild = client.guilds.get(guildID);
+
+  client.channels.cache.get(idChannelRules).messages.fetch('561412240431906817').then(
+    message => {
+      message.reactions.cache.forEach((reaction) => {
+        console.log(reaction);
+        reaction.fetch();
+      });
+
+      //const filter = (reaction, user) => true;
+      //collector = message.createReactionCollector(filter, {});
+      //collector.on('collect', r => console.log(`Collected ${r.emoji.name}`));
+    },
+  );
+
+  // Cache the reaction message so we can watch for changes on it
+  // client.channels.cache.get(idChannelRules).messages.fetchPinned().then(messages => {
+  //   console.log(`Received ${messages.size} messages`);
+  //   messages.forEach((message) => {
+  //     const filter = (reaction, user) => true;
+  //     const collector = message.createReactionCollector(filter, {});
+  //     collector.on('collect', r => console.log(`Collected ${r.emoji.name}`));
+  //   });
+  // })
+  // .catch(console.error);
+
 });
 
-// See https://github.com/AnIdiotsGuide/discordjs-bot-guide/blob/master/coding-guides/raw-events.md
-// Add the 'normal' role when a user leaves a reaction in the #rules channel
-client.on('raw', (packet) => {
-  // Check that this is a reaction add/remove message
-  if (!['MESSAGE_REACTION_ADD', 'MESSAGE_REACTION_REMOVE'].includes(packet.t)) {
+// NOTE: this function only monitors messages which are cached ('fetched')
+// In the 'ready' function we cache the pinned messages in the rules channel to make sure
+// we watch the pinned message for reactions.
+// Based on: https://discordjs.guide/popular-topics/reactions.html#listening-for-reactions-on-old-messages
+client.on('messageReactionAdd', (reaction, user) => {
+  console.log(reaction);
+
+  // if (reaction.partial) {
+  //   try {
+  //     await reaction.fetch();
+  //   } catch (error) {
+  //     console.error('Failed to react to reaction: ', error);
+  //     return;
+  //   }
+  // }
+
+  if (!user || user.bot || !reaction.message.channel.guild) {
     return;
   }
+
+  const currentGuild = reaction.message.channel.guild;
 
   // Check that the channel ID is one that we want to monitor
-  const channelId = packet.d.channel_id;
-  if (![idChannelRules, idChannelBotSpam].includes(channelId)) {
+  if (![idChannelRules, idChannelBotSpam].includes(reaction.message.channel.id)) {
     return;
   }
 
-  // Note: packet.d.emoji.id field MAY exist, but not always.
-  const emoji = packet.d.emoji.name;
-  const userWhoReacted = client.users.get(packet.d.user_id);
-
-  currentGuild.fetchMember(userWhoReacted).then((memberWhoReacted) => {
+  currentGuild.members.fetch(user).then((memberWhoReacted) => {
     // always add normal role if a user ever adds/removes any reaction
-    memberWhoReacted.addRole(currentGuild.roles.get(idRoleNormalChannels));
+    memberWhoReacted.roles.add(currentGuild.roles.cache.get(idRoleNormalChannels));
 
-    const maybeRoleId = emojiToRoleIDMap[emoji];
+    const maybeRoleId = emojiToRoleIDMap[reaction.message.emoji.name];
     if (maybeRoleId !== undefined) {
-      if (packet.t === 'MESSAGE_REACTION_ADD') {
-        memberWhoReacted.addRole(currentGuild.roles.get(maybeRoleId));
-      } else {
-        memberWhoReacted.removeRole(currentGuild.roles.get(maybeRoleId));
-      }
+      //if (packet.t === 'MESSAGE_REACTION_ADD') {
+      memberWhoReacted.roles.add(currentGuild.roles.cache.get(maybeRoleId));
+      //} else {
+      //  memberWhoReacted.roles.remove(currentGuild.roles.cache.get(maybeRoleId));
+      //}
     }
   }).catch(logVerbose);
 });
 
+// See https://github.com/AnIdiotsGuide/discordjs-bot-guide/blob/master/coding-guides/raw-events.md
+// Add the 'normal' role when a user leaves a reaction in the #rules channel
+// client.on('raw', (packet) => {
+//   // Check that this is a reaction add/remove message
+//   if (!['MESSAGE_REACTION_ADD', 'MESSAGE_REACTION_REMOVE'].includes(packet.t)) {
+//     return;
+//   }
+
+//   // Check that the channel ID is one that we want to monitor
+//   const channelId = packet.d.channel_id;
+//   if (![idChannelRules, idChannelBotSpam].includes(channelId)) {
+//     return;
+//   }
+
+//   // Note: packet.d.emoji.id field MAY exist, but not always.
+//   const emoji = packet.d.emoji.name;
+//   const userWhoReacted = client.users.cache.get(packet.d.user_id);
+
+//   currentGuild.members.fetch(userWhoReacted).then((memberWhoReacted) => {
+//     // always add normal role if a user ever adds/removes any reaction
+//     memberWhoReacted.addRole(currentGuild.roles.get(idRoleNormalChannels));
+
+//     const maybeRoleId = emojiToRoleIDMap[emoji];
+//     if (maybeRoleId !== undefined) {
+//       if (packet.t === 'MESSAGE_REACTION_ADD') {
+//         memberWhoReacted.addRole(currentGuild.roles.get(maybeRoleId));
+//       } else {
+//         memberWhoReacted.removeRole(currentGuild.roles.get(maybeRoleId));
+//       }
+//     }
+//   }).catch(logVerbose);
+// });
+
 function warnUserEmbedOrImage(message, warnURL) {
-  if (message.member.roles.has(idRoleDeveloper)) {
+  if (message.member.roles.cache.has(idRoleDeveloper)) {
     return;
   }
 
@@ -350,7 +391,7 @@ If it contains spoilers, please re-upload the image with the '✅ Mark as Spoile
 }
 
 function scanUserNeedsFirstTimeSupport(message) {
-  if (message.member.roles.has(idRoleDeveloper)) {
+  if (message.member.roles.cache.has(idRoleDeveloper)) {
     return;
   }
 
